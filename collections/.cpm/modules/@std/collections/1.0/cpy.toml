@@ -1,0 +1,34 @@
+[cpm]
+name = "collections"
+version = "1.0"
+prebuilt = true
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+# no dependencies
+
+# [cpm.dependencies]
+# "@std/json" = "^1.0"
+# "@std/http" = "1.0"
+
+# [cpm.target]
+# os = "linux"
+# arch = "x86_64"
+# features = ["gui", "ssl"]
+
+# [cpm.dependencies.windows]
+# "win32-api" = "1.0"
+
+# [cpm.dependencies.linux]
+# "posix-api" = "1.0"
+
+# Set scorpion = true to also pre-compile a .sef (Scorpion RISC-V) artifact
+# on every build:  scorpion = true
+#
+# Set sef = true to install SEF artifacts from the registry instead of source:
+#   sef = true
+#
+# [cpm.build]
+# pic = true               # dynamic SEF v2 (PIC + relocations); default true
+# exports = ["bigint_add"] # library symbols to mark as exported

@@ -1,0 +1,9 @@
+[cpm]
+name = "collections"
+version = "1.0"
+prebuilt = true
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+"@std/collections" = "latest"

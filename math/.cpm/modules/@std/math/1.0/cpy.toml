@@ -1,0 +1,6 @@
+[cpm]
+name = "math"
+version = "0.1.0"
+prebuilt = false
+scorpion = false
+sef = false

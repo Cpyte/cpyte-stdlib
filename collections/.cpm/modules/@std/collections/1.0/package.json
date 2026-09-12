@@ -1,0 +1,16 @@
+{
+  "name": "collections",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {
+    "runtime_hooks": ["runtime_hooks.py"]
+  },
+  "metadata": {
+    "description": "Standard data structures for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

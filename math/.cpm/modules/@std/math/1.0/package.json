@@ -1,0 +1,14 @@
+{
+  "name": "math",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "Standard math utilities for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}
