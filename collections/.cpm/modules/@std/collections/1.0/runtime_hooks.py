@@ -1,12 +1,11 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'WEW', 'source'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "WEW", "source"))
 from cpyte.extension_hooks import RuntimeHook
 
 
 class DequeRuntimeHook(RuntimeHook):
-
     def get_runtime_code(self):
         return """
 #include <stdint.h>

@@ -1,0 +1,20 @@
+{
+  "name": "asyncio_ext",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": ["async", "await"],
+    "operators": []
+  },
+  "extensions": {
+    "lexer_hooks": ["lexer_hooks.py"],
+    "parser_hooks": ["parser_hooks.py"],
+    "semantic_hooks": ["semantic_hooks.py"],
+    "codegen_hooks": ["codegen_hooks.py"],
+    "runtime_hooks": ["runtime_hooks.py"]
+  },
+  "metadata": {
+    "description": "Async/await syntax compatibility for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}
