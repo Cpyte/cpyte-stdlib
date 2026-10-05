@@ -140,7 +140,7 @@ public def vector2_perpendicular(v Vector2) -> Vector2:
 
 # Check if vectors are approximately equal
 public def vector2_approx_equal(a Vector2, b Vector2, epsilon double) -> bool:
-    return abs(a.x - b.x) < epsilon and abs(a.y - b.y) < epsilon
+    return fabs(a.x - b.x) < epsilon and fabs(a.y - b.y) < epsilon
 
 # Maximum component
 public def vector2_max_component(v Vector2) -> double:
@@ -156,7 +156,7 @@ public def vector2_min_component(v Vector2) -> double:
 
 # Absolute value of each component
 public def vector2_abs(v Vector2) -> Vector2:
-    return vector2(abs(v.x), abs(v.y))
+    return vector2(fabs(v.x), fabs(v.y))
 
 # Floor each component
 public def vector2_floor(v Vector2) -> Vector2:

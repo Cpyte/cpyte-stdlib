@@ -23,11 +23,11 @@ public def scalar_rad_to_deg(rad double) -> double:
 
 # Check if value is approximately zero
 public def scalar_approx_zero(value double, epsilon double) -> bool:
-    return abs(value) < epsilon
+    return fabs(value) < epsilon
 
 # Check if two values are approximately equal
 public def scalar_approx_equal(a double, b double, epsilon double) -> bool:
-    return abs(a - b) < epsilon
+    return fabs(a - b) < epsilon
 
 # Sign function (-1, 0, or 1)
 public def scalar_sign(value double) -> double:
@@ -236,3 +236,34 @@ public def ctz(value uint64) -> int:
         value = value >> 1
         count += 1
     return count
+
+# Minimum of a dynamic array of numbers.
+# Note: indexing a dynamic[] yields a DynValue, so each element is unboxed by
+# assigning it to a typed local (`double v = values[i]`); a `(double)` cast or
+# `for v in values` leaves the DynValue unconverted and fails to lower.
+public def min(values dynamic[]) -> double:
+    int n = len(values)
+    if n == 0:
+        return 0.0
+    # Seed from the first element: seeding from 0 would clamp every result
+    # towards zero, so min([5, 3, 7]) would wrongly answer 0.
+    double best = values[0]
+    int i = 1
+    while i < n:
+        double v = values[i]
+        best = scalar_min(best, v)
+        i = i + 1
+    return best
+
+# Maximum of a dynamic array of numbers (see min for the unboxing rules).
+public def max(values dynamic[]) -> double:
+    int n = len(values)
+    if n == 0:
+        return 0.0
+    double best = values[0]
+    int i = 1
+    while i < n:
+        double v = values[i]
+        best = scalar_max(best, v)
+        i = i + 1
+    return best

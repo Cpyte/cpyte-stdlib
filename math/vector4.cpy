@@ -104,7 +104,7 @@ public def vector4_project(v Vector4, onto Vector4) -> Vector4:
 
 # Check if vectors are approximately equal
 public def vector4_approx_equal(a Vector4, b Vector4, epsilon double) -> bool:
-    return abs(a.x - b.x) < epsilon and abs(a.y - b.y) < epsilon and abs(a.z - b.z) < epsilon and abs(a.w - b.w) < epsilon
+    return fabs(a.x - b.x) < epsilon and fabs(a.y - b.y) < epsilon and fabs(a.z - b.z) < epsilon and fabs(a.w - b.w) < epsilon
 
 # Convert homogeneous vector to a normalized-xyz Vector4 (divide xyz by w).
 # Cross-type conversion to Vector3 lives in the aggregator module.

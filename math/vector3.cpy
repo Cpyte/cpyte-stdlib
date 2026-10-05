@@ -176,7 +176,7 @@ public def vector3_project_plane(v Vector3, normal Vector3) -> Vector3:
 
 # Check if vectors are approximately equal
 public def vector3_approx_equal(a Vector3, b Vector3, epsilon double) -> bool:
-    return abs(a.x - b.x) < epsilon and abs(a.y - b.y) < epsilon and abs(a.z - b.z) < epsilon
+    return fabs(a.x - b.x) < epsilon and fabs(a.y - b.y) < epsilon and fabs(a.z - b.z) < epsilon
 
 # Maximum component
 public def vector3_max_component(v Vector3) -> double:
@@ -198,7 +198,7 @@ public def vector3_min_component(v Vector3) -> double:
 
 # Absolute value of each component
 public def vector3_abs(v Vector3) -> Vector3:
-    return vector3(abs(v.x), abs(v.y), abs(v.z))
+    return vector3(fabs(v.x), fabs(v.y), fabs(v.z))
 
 # Floor each component
 public def vector3_floor(v Vector3) -> Vector3:
