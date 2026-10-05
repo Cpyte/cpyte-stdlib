@@ -1,9 +1,11 @@
 [cpm]
 name = "collections"
-version = "1.0"
+version = "1.1"
 prebuilt = true
 scorpion = false
 sef = false
 
 [cpm.dependencies]
-"@std/collections" = "latest"
+# No dependencies. This package must NOT depend on itself: the registry name
+# is @std/collections, so a "@std/collections" entry here is a circular
+# dependency that breaks `cpm install` resolution.

@@ -1,7 +1,5 @@
 import "stdio"
 import string
-import "hashmap.h"
-import "hashset.h"
 import "adjacency_list.cpy"
 import "array.cpy"
 import "avl_tree.cpy"
