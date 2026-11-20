@@ -1,0 +1,14 @@
+{
+  "name": "platform",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "Platform detection utilities for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

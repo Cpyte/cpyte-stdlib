@@ -1,0 +1,6 @@
+[cpm]
+name = "platform"
+version = "1.0.0"
+prebuilt = false
+scorpion = false
+sef = false

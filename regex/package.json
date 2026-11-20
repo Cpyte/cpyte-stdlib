@@ -1,0 +1,7 @@
+{
+  "name": "regex",
+  "version": "1.0.0",
+  "capabilities": { "keywords": [], "operators": [] },
+  "extensions": {},
+  "metadata": { "description": "regex library", "author": "WEW", "license": "MIT" }
+}

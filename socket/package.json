@@ -1,0 +1,7 @@
+{
+  "name": "socket",
+  "version": "1.0.0",
+  "capabilities": { "keywords": [], "operators": [] },
+  "extensions": {},
+  "metadata": { "description": "socket library", "author": "WEW", "license": "MIT" }
+}

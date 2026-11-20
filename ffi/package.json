@@ -1,0 +1,7 @@
+{
+  "name": "ffi",
+  "version": "1.0.0",
+  "capabilities": { "keywords": [], "operators": [] },
+  "extensions": {},
+  "metadata": { "description": "ffi library", "author": "WEW", "license": "MIT" }
+}

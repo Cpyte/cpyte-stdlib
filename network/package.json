@@ -1,0 +1,7 @@
+{
+  "name": "network",
+  "version": "1.0.0",
+  "capabilities": { "keywords": [], "operators": [] },
+  "extensions": {},
+  "metadata": { "description": "network library", "author": "WEW", "license": "MIT" }
+}
