@@ -1,4 +1,6 @@
 # network 1.1.0 - minimal HTTP helpers (blocking HTTP/1.0)
+# HTTPS: compiles only when the consumer builds with -DCPYTE_NET_HAVE_OPENSSL and links OpenSSL
+# (libssl/libcrypto). Without it, https:// URLs return an error from net_last_error().
 
 ccode:
     #include <stdint.h>
@@ -39,6 +41,22 @@ ccode:
         static void cpy_net_close_sock(cpy_sock_t s) { close(s); }
     #endif
 
+    /* Optional OpenSSL for HTTPS. If headers/libs not available at compile time,
+       HTTPS requests will return an error message. */
+    #if defined(CPYTE_NET_HAVE_OPENSSL)
+    #include <openssl/ssl.h>
+    #include <openssl/err.h>
+    #include <openssl/x509v3.h>
+    static int cpy_ssl_inited = 0;
+    static void cpy_ssl_ensure(void) {
+        if (!cpy_ssl_inited) {
+            SSL_load_error_strings();
+            OpenSSL_add_ssl_algorithms();
+            cpy_ssl_inited = 1;
+        }
+    }
+    #endif
+
     static int g_net_status = 0;
     static char g_net_err[256] = {0};
 
@@ -54,10 +72,11 @@ ccode:
         g_net_err[0] = 0;
     }
 
-    static int parse_http_url(const char* url, char* host, size_t hostsz, int* port, char* path, size_t pathsz) {
+    static int parse_http_url(const char* url, int* is_https, char* host, size_t hostsz, int* port, char* path, size_t pathsz) {
         const char* p = url;
-        if (strncmp(p, "http://", 7) == 0) p += 7;
-        else if (strncmp(p, "https://", 8) == 0) { set_err("https not supported (use http:// or add TLS separately)"); return -1; }
+        if (strncmp(p, "http://", 7) == 0) { *is_https = 0; p += 7; }
+        else if (strncmp(p, "https://", 8) == 0) { *is_https = 1; p += 8; }
+        else { set_err("url must start with http:// or https://"); return -1; }
         const char* slash = strchr(p, '/');
         const char* hostport = p;
         size_t hlen = slash ? (size_t)(slash - p) : strlen(p);
@@ -69,11 +88,11 @@ ccode:
             memcpy(host, hostport, hn);
             host[hn] = 0;
             *port = atoi(colon + 1);
-            if (*port <= 0) *port = 80;
+            if (*port <= 0) *port = (*is_https ? 443 : 80);
         } else {
             memcpy(host, hostport, hlen);
             host[hlen] = 0;
-            *port = 80;
+            *port = (*is_https ? 443 : 80);
         }
         if (slash) {
             strncpy(path, slash, pathsz - 1);
@@ -104,10 +123,15 @@ ccode:
         clear_err();
         if (!url || url[0] == 0) { set_err("empty url"); return NULL; }
         if (!method || method[0] == 0) method = "GET";
+        int is_https = 0;
         char host[512];
         char path[2048];
         int port = 80;
-        if (parse_http_url(url, host, sizeof(host), &port, path, sizeof(path)) != 0) return NULL;
+        if (parse_http_url(url, &is_https, host, sizeof(host), &port, path, sizeof(path)) != 0) return NULL;
+
+        #if !defined(CPYTE_NET_HAVE_OPENSSL)
+        if (is_https) { set_err("HTTPS not built-in (OpenSSL not available at compile time). Use http://"); return NULL; }
+        #endif
 
         struct addrinfo hints;
         memset(&hints, 0, sizeof(hints));
@@ -147,42 +171,87 @@ ccode:
                 method, path, host);
         }
         if (rn <= 0 || rn >= (int)sizeof(req)) { cpy_net_close_sock(sock); set_err("request header too large"); return NULL; }
-        #ifdef _WIN32
-            if (send(sock, req, rn, 0) < 0) { cpy_net_close_sock(sock); set_err("send failed"); return NULL; }
+
+        #if defined(CPYTE_NET_HAVE_OPENSSL)
+        SSL_CTX* ctx = NULL;
+        SSL* ssl = NULL;
+        if (is_https) {
+            cpy_ssl_ensure();
+            const SSL_METHOD* method_ssl = TLS_client_method();
+            ctx = SSL_CTX_new(method_ssl);
+            if (!ctx) { cpy_net_close_sock(sock); set_err("SSL_CTX_new failed"); return NULL; }
+            SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL); /* minimal: no cert verification for now */
+            ssl = SSL_new(ctx);
+            if (!ssl) { SSL_CTX_free(ctx); cpy_net_close_sock(sock); set_err("SSL_new failed"); return NULL; }
+            SSL_set_tlsext_host_name(ssl, host);
+            SSL_set_fd(ssl, (int)sock);
+            if (SSL_connect(ssl) != 1) {
+                SSL_free(ssl); SSL_CTX_free(ctx); cpy_net_close_sock(sock); set_err("SSL_connect failed"); return NULL;
+            }
+        }
+        #define NET_SEND(d,l) (is_https ? SSL_write(ssl,d,(int)(l)) : send(sock,d,(l),0))
+        #define NET_RECV(d,l) (is_https ? SSL_read(ssl,d,(int)(l)) : recv(sock,d,(l),0))
         #else
-            if (send(sock, req, (size_t)rn, 0) < 0) { cpy_net_close_sock(sock); set_err("send failed"); return NULL; }
+        #define NET_SEND(d,l) send(sock,d,(l),0)
+        #define NET_RECV(d,l) recv(sock,d,(l),0)
         #endif
-        if (body_len > 0) {
-            #ifdef _WIN32
-                if (send(sock, body, (int)body_len, 0) < 0) { cpy_net_close_sock(sock); set_err("send body failed"); return NULL; }
-            #else
-                if (send(sock, body, body_len, 0) < 0) { cpy_net_close_sock(sock); set_err("send body failed"); return NULL; }
+
+        #ifdef _WIN32
+        if (NET_SEND(req, (size_t)rn) < 0) {
+        #else
+        if (NET_SEND(req, (size_t)rn) < 0) {
+        #endif
+            #if defined(CPYTE_NET_HAVE_OPENSSL)
+            if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
             #endif
+            cpy_net_close_sock(sock); set_err("send failed"); return NULL;
+        }
+        if (body_len > 0) {
+            if (NET_SEND(body, body_len) < 0) {
+                #if defined(CPYTE_NET_HAVE_OPENSSL)
+                if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
+                #endif
+                cpy_net_close_sock(sock); set_err("send body failed"); return NULL;
+            }
         }
 
         size_t cap = 16384;
         size_t len = 0;
         char* buf = (char*)malloc(cap + 1);
-        if (!buf) { cpy_net_close_sock(sock); set_err("oom"); return NULL; }
+        if (!buf) {
+            #if defined(CPYTE_NET_HAVE_OPENSSL)
+            if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
+            #endif
+            cpy_net_close_sock(sock); set_err("oom"); return NULL;
+        }
         for (;;) {
             char tmp[4096];
-            #ifdef _WIN32
-                int n = recv(sock, tmp, (int)sizeof(tmp), 0);
-            #else
-                ssize_t n = recv(sock, tmp, sizeof(tmp), 0);
-            #endif
-            if (n < 0) { free(buf); cpy_net_close_sock(sock); set_err("recv failed (timeout?)"); return NULL; }
+            int n = NET_RECV(tmp, sizeof(tmp));
+            if (n < 0) { free(buf);
+                #if defined(CPYTE_NET_HAVE_OPENSSL)
+                if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
+                #endif
+                cpy_net_close_sock(sock); set_err("recv failed (timeout?)"); return NULL;
+            }
             if (n == 0) break;
             if (len + (size_t)n + 1 > cap) {
                 cap = cap * 2 + (size_t)n + 1024;
                 char* nb = (char*)realloc(buf, cap + 1);
-                if (!nb) { free(buf); cpy_net_close_sock(sock); set_err("oom"); return NULL; }
+                if (!nb) { free(buf);
+                    #if defined(CPYTE_NET_HAVE_OPENSSL)
+                    if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
+                    #endif
+                    cpy_net_close_sock(sock); set_err("oom"); return NULL;
+                }
                 buf = nb;
             }
             memcpy(buf + len, tmp, (size_t)n);
             len += (size_t)n;
         }
         buf[len] = 0;
+        #if defined(CPYTE_NET_HAVE_OPENSSL)
+        if (is_https) { SSL_free(ssl); SSL_CTX_free(ctx); }
+        #endif
         cpy_net_close_sock(sock);
 
         g_net_status = 0;
@@ -204,6 +273,9 @@ ccode:
         free(buf);
         return out;
     }
+
+    #undef NET_SEND
+    #undef NET_RECV
 
     char* cpy_net_http_get(const char* url) {
         return cpy_net_http_do(url, "GET", NULL, NULL);
