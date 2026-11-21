@@ -1,10 +1,10 @@
 {
   "name": "regex",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "capabilities": { "keywords": [], "operators": [] },
   "extensions": {},
   "metadata": {
-    "description": "Production PCRE2-backed regular expressions for Cpyte",
+    "description": "Full PCRE2-backed regular expressions for Cpyte: matching, captures, split, replace, and quoting",
     "author": "WEW",
     "license": "MIT"
   }
