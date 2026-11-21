@@ -172,7 +172,7 @@ public def identity_put(m IdentityMap, key void*, value void*) -> IdentityMap:
     m.used_count = uc + (size_t)1
     return m
 
-# Value for key, or NULL (use hashmap_contains for presence).
+# Value for key, or NULL (use hash_map_contains for presence).
 public def identity_get(m IdentityMap, key void*) -> void*:
     size_t cap = m.capacity
     size_t start = _im_kvhash(key) & (cap - (size_t)1)

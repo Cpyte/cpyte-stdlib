@@ -82,7 +82,10 @@ public def arena_create(bytes size_t) -> void*:
     return cpy_arena_create((int)bytes)
 
 # Draw `bytes` from the arena, aligned to at least `align` bytes.
-public def arena_alloc(arena void*, bytes size_t, align size_t) -> void*:
+# Not named `arena_alloc`: the GC runtime (gc_runtime_addition.c) exports a C
+# `arena_alloc`, and it is linked into every program, so a cpyte function of the
+# same name dies at JIT link with "symbol multiply defined".
+public def arena_take(arena void*, bytes size_t, align size_t) -> void*:
     return cpy_arena_alloc(arena, (int)bytes, (int)align)
 
 # Rewind the arena to the beginning (all previously drawn chunks are freed as

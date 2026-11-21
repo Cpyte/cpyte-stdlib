@@ -16,17 +16,17 @@ def main():
         print("buf_move FAIL")
         return
     void* ar = arena_create((size_t)1024)
-    int* p1 = (int*)arena_alloc(ar, (size_t)1024, (size_t)8)
+    int* p1 = (int*)arena_take(ar, (size_t)1024, (size_t)8)
     if p1 == 0:
-        print("arena_alloc FAIL")
+        print("arena_take FAIL")
         return
-    p1 = (int*)arena_alloc(ar, (size_t)1024, (size_t)8)
+    p1 = (int*)arena_take(ar, (size_t)1024, (size_t)8)
     p1[0] = 77
     if p1[0] != 77:
         print("arena realloc-chunk FAIL")
         return
     arena_reset(ar)
-    int* p2 = (int*)arena_alloc(ar, (size_t)1024, (size_t)8)
+    int* p2 = (int*)arena_take(ar, (size_t)1024, (size_t)8)
     p2[0] = 88
     if p2[0] != 88:
         print("arena reset FAIL")

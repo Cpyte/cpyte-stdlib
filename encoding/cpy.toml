@@ -1,0 +1,9 @@
+[cpm]
+name = "encoding"
+version = "1.0.0"
+prebuilt = false
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+# No dependencies; the module is self-contained (ccode + cpy).

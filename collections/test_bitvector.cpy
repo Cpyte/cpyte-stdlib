@@ -10,6 +10,8 @@ public def main():
     BitVector b = create_bitvector()
     int[] model = new int[3000]
     int n = 0
+    for n in range(3000):
+        model[n] = 0
     for n in range(300):
         if n % 2 == 0:
             b = bitvector_push(b, 1)

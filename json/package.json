@@ -1,0 +1,7 @@
+{
+  "name": "json",
+  "version": "1.0.0",
+  "capabilities": { "keywords": [], "operators": [] },
+  "extensions": {},
+  "metadata": { "description": "JSON stringification helpers", "author": "WEW", "license": "MIT" }
+}

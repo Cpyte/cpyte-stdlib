@@ -1,0 +1,14 @@
+{
+  "name": "time",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "Wall/monotonic clocks, calendar fields, formatting and sleep",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

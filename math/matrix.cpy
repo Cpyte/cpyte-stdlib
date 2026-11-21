@@ -1090,15 +1090,15 @@ public def matrix_bidiagonalize(a Matrix) -> Matrix:
             # right Householder for row k columns k+1..n-1
             Matrix vrow = matrix(n - (size_t)(k + 1), (size_t)1)
             for j2 in range((int)k + 1, (int)n):
-                vrow.data[j2 - (int)k - 1] = b.data[(int)k * (int)n + (int)j2]
+                vrow.data[(j2 - (int)k) - 1] = b.data[(int)k * (int)n + (int)j2]
             double beta2 = matrix_householder_vector(vrow, vrow)
             for i in range((int)m):
                 double dot = 0.0
                 for j2 in range((int)k + 1, (int)n):
-                    dot = dot + b.data[(int)i * (int)n + (int)j2] * vrow.data[j2 - (int)k - 1]
+                    dot = dot + b.data[(int)i * (int)n + (int)j2] * vrow.data[(j2 - (int)k) - 1]
                 double d = beta2 * dot
                 for j2 in range((int)k + 1, (int)n):
-                    b.data[(int)i * (int)n + (int)j2] = b.data[(int)i * (int)n + (int)j2] - d * vrow.data[j2 - (int)k - 1]
+                    b.data[(int)i * (int)n + (int)j2] = b.data[(int)i * (int)n + (int)j2] - d * vrow.data[(j2 - (int)k) - 1]
     # extract upper bidiagonal into n x n
     Matrix out = matrix(n, n)
     for i in range((int)n):

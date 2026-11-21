@@ -1,12 +1,14 @@
 {
   "name": "collections",
-  "version": "1.0.0",
+  "version": "1.5",
   "capabilities": {
     "keywords": [],
     "operators": []
   },
   "extensions": {
-    "runtime_hooks": ["runtime_hooks.py"]
+    "runtime_hooks": [
+      "runtime_hooks.py"
+    ]
   },
   "metadata": {
     "description": "Standard data structures for Cpyte",

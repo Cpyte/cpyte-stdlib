@@ -1,0 +1,16 @@
+{
+  "name": "cryptography",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {
+    "build_hooks": ["hooks/openssl_build.py"]
+  },
+  "metadata": {
+    "description": "Hash, HMAC, HKDF and CSPRNG primitives for Cpyte (OpenSSL-backed)",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

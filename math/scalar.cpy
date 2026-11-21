@@ -179,7 +179,8 @@ public def scalar_exp2(value double) -> double:
 public def scalar_log1p(value double) -> double:
     assert value > -1.0, "log1p domain error"
     if fabs(value) < 0.00000001:
-        return value - value * value / 2.0 + value * value * value / 3.0
+        # Parenthesized: chained `-`/`+` is right-associative in cpyte 4.6.9.
+        return (value - value * value / 2.0) + value * value * value / 3.0
     return log(1.0 + value)
 
 public def scalar_expm1(value double) -> double:
@@ -242,7 +243,7 @@ public def ctz(value uint64) -> int:
 # assigning it to a typed local (`double v = values[i]`); a `(double)` cast or
 # `for v in values` leaves the DynValue unconverted and fails to lower.
 public def min(values dynamic[]) -> double:
-    int n = len(values)
+    int n = (int)len(values)
     if n == 0:
         return 0.0
     # Seed from the first element: seeding from 0 would clamp every result
@@ -257,7 +258,7 @@ public def min(values dynamic[]) -> double:
 
 # Maximum of a dynamic array of numbers (see min for the unboxing rules).
 public def max(values dynamic[]) -> double:
-    int n = len(values)
+    int n = (int)len(values)
     if n == 0:
         return 0.0
     double best = values[0]

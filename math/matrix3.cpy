@@ -95,11 +95,12 @@ public def matrix3_trace(a Matrix3) -> double:
 
 # Determinant
 public def matrix3_det(a Matrix3) -> double:
-    return (
-        a.m00 * (a.m11 * a.m22 - a.m12 * a.m21)
-        - a.m01 * (a.m10 * a.m22 - a.m12 * a.m20)
-        + a.m02 * (a.m10 * a.m21 - a.m11 * a.m20)
-    )
+    # Parenthesized step by step: chained `-`/`+` is right-associative in
+    # cpyte 4.6.9 (`a - b + c` compiles as `a - (b + c)`).
+    double t0 = a.m00 * (a.m11 * a.m22 - a.m12 * a.m21)
+    double t1 = a.m01 * (a.m10 * a.m22 - a.m12 * a.m20)
+    double t2 = a.m02 * (a.m10 * a.m21 - a.m11 * a.m20)
+    return (t0 - t1) + t2
 
 # Cofactor matrix
 public def matrix3_cofactor(a Matrix3) -> Matrix3:

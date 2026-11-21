@@ -1,0 +1,10 @@
+[cpm]
+name = "cryptography"
+version = "1.0.0"
+prebuilt = false
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+# No dependencies. hash.cpy, random.cpy and kdf.cpy are self-contained C
+# backends; kdf.cpy reaches HMAC through a plain `import "hash.cpy"`.

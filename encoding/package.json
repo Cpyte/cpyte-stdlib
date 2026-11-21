@@ -1,0 +1,14 @@
+{
+  "name": "encoding",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "base64, hexadecimal and percent (URL) encodings",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

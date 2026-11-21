@@ -6,37 +6,37 @@ def main():
     HashMap m = create_hashmap((size_t)8)
     int i = 0
     for i in range(60000):
-        m = hashmap_put(m, (void*)(i + 1), (void*)((i + 1) * 10))
-    if (int)hashmap_size(m) != 60000:
-        print("map size FAIL", (int)hashmap_size(m))
+        m = hash_map_put(m, (void*)(i + 1), (void*)((i + 1) * 10))
+    if (int)hash_map_size(m) != 60000:
+        print("map size FAIL", (int)hash_map_size(m))
         return
     for i in range(60000):
-        if (int)hashmap_get(m, (void*)(i + 1)) != (i + 1) * 10:
+        if (int)hash_map_get(m, (void*)(i + 1)) != (i + 1) * 10:
             print("map get FAIL", i + 1)
             return
     for i in range(30000):
-        m = hashmap_erase(m, (void*)((i * 2) + 2))
-    if (int)hashmap_size(m) != 30000:
-        print("map erase FAIL", (int)hashmap_size(m))
+        m = hash_map_erase(m, (void*)((i * 2) + 2))
+    if (int)hash_map_size(m) != 30000:
+        print("map erase FAIL", (int)hash_map_size(m))
         return
     for i in range(30000):
-        if hashmap_contains(m, (void*)((i * 2) + 2)) != 0:
+        if hash_map_contains(m, (void*)((i * 2) + 2)) != 0:
             print("map removed still there", (i * 2) + 2)
             return
-        if hashmap_contains(m, (void*)((i * 2) + 1)) != 1:
+        if hash_map_contains(m, (void*)((i * 2) + 1)) != 1:
             print("map survivor missing", (i * 2) + 1)
             return
     for i in range(40000):
-        m = hashmap_put(m, (void*)(1000000 + i), (void*)(i * 7))
-    if (int)hashmap_size(m) != 30000 + 40000:
-        print("map grow FAIL", (int)hashmap_size(m))
+        m = hash_map_put(m, (void*)(1000000 + i), (void*)(i * 7))
+    if (int)hash_map_size(m) != 30000 + 40000:
+        print("map grow FAIL", (int)hash_map_size(m))
         return
     for i in range(40000):
-        if (int)hashmap_get(m, (void*)(1000000 + i)) != i * 7:
+        if (int)hash_map_get(m, (void*)(1000000 + i)) != i * 7:
             print("map grow get FAIL", i)
             return
     for i in range(30000):
-        if (int)hashmap_get(m, (void*)((i * 2) + 1)) != ((i * 2) + 1) * 10:
+        if (int)hash_map_get(m, (void*)((i * 2) + 1)) != ((i * 2) + 1) * 10:
             print("map survivor get FAIL", (i * 2) + 1)
             return
 

@@ -12,6 +12,8 @@ public def main():
     Bitmap m = create_bitmap((size_t)bits)
     int[] model = new int[512]
     int i = 0
+    for i in range(512):
+        model[i] = 0
     for i in range(120):
         m = bitmap_set(m, (size_t)i)
         model[i] = 1
@@ -24,6 +26,8 @@ public def main():
     BitSet s = create_bitset((size_t)bits)
     int[] smodel = new int[512]
     int j = 0
+    for j in range(512):
+        smodel[j] = 0
     for j in range(120):
         s = bitset_set(s, (size_t)j)
         smodel[j] = 1

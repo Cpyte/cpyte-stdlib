@@ -3,16 +3,9 @@ import os
 import sys
 
 from cpyte.extension_hooks import CodegenHook, HookMetadata
+from llvmlite import ir
 
-try:
-    import llvmlite.ir as ir
-except Exception:  # pragma: no cover
-    ir = None
-
-try:
-    from cpyte.errors import CompileError
-except Exception:  # pragma: no cover
-    CompileError = Exception
+CompileError = Exception
 
 
 def _shared():
@@ -160,7 +153,6 @@ class AsyncCodegenHook(CodegenHook):
             elif isinstance(arg_ty, ir.PointerType):
                 data = b.ptrtoint(arg, ir.IntType(64))
             else:
-                from cpyte.errors import CompileError
 
                 raise CompileError(
                     f"async task param `{pname}`: unsupported type `{ptype}` "

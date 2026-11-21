@@ -1,0 +1,14 @@
+{
+  "name": "strings",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "Text utilities: search, case, trim, pad, split/join, replace",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

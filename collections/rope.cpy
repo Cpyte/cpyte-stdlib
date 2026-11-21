@@ -129,7 +129,7 @@ public def _rope_del(node RopeNode*, pos size_t, n size_t, rem size_t*) -> RopeN
             take = *rem
         *rem = *rem - take
         size_t keep0 = pos
-        size_t keep1 = node.weight - pos - take
+        size_t keep1 = (node.weight - pos) - take
         if keep0 + keep1 == (size_t)0:
             return 0
         char* ns = (char*)malloc((keep0 + keep1 + (size_t)1) * (size_t)sizeof(char))

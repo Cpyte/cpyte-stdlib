@@ -154,7 +154,19 @@ public def matrix4_det(a Matrix4) -> double:
     double c2 = a.m20 * a.m33 - a.m23 * a.m30
     double c1 = a.m20 * a.m32 - a.m22 * a.m30
     double c0 = a.m20 * a.m31 - a.m21 * a.m30
-    return s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0
+    # Parenthesized step by step: chained `-`/`+` is right-associative in
+    # cpyte 4.6.9 (`a - b + c` compiles as `a - (b + c)`).
+    double p0 = s0 * c5
+    double p1 = s1 * c4
+    double p2 = s2 * c3
+    double p3 = s3 * c2
+    double p4 = s4 * c1
+    double p5 = s5 * c0
+    double d0 = p0 - p1
+    double d1 = d0 + p2
+    double d2 = d1 + p3
+    double d3 = d2 - p4
+    return d3 + p5
 
 # Inverse via cofactor expansion.
 public def matrix4_inverse(a Matrix4) -> Matrix4:
@@ -170,26 +182,54 @@ public def matrix4_inverse(a Matrix4) -> Matrix4:
     double c2 = a.m20 * a.m33 - a.m23 * a.m30
     double c1 = a.m20 * a.m32 - a.m22 * a.m30
     double c0 = a.m20 * a.m31 - a.m21 * a.m30
-    double det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0
+    # Parenthesized step by step: chained `-`/`+` is right-associative in
+    # cpyte 4.6.9 (`a - b + c` compiles as `a - (b + c)`).
+    double p0 = s0 * c5
+    double p1 = s1 * c4
+    double p2 = s2 * c3
+    double p3 = s3 * c2
+    double p4 = s4 * c1
+    double p5 = s5 * c0
+    double d0 = p0 - p1
+    double d1 = d0 + p2
+    double d2 = d1 + p3
+    double d3 = d2 - p4
+    double det = d3 + p5
     assert det != 0.0, "Matrix is singular, cannot invert"
     double id = 1.0 / det
     Matrix4 inv
-    inv.m00 = (a.m11 * c5 - a.m12 * c4 + a.m13 * c3) * id
-    inv.m01 = (-a.m01 * c5 + a.m02 * c4 - a.m03 * c3) * id
-    inv.m02 = (a.m31 * s5 - a.m32 * s4 + a.m33 * s3) * id
-    inv.m03 = (-a.m21 * s5 + a.m22 * s4 - a.m23 * s3) * id
-    inv.m10 = (-a.m10 * c5 + a.m12 * c2 - a.m13 * c1) * id
-    inv.m11 = (a.m00 * c5 - a.m02 * c2 + a.m03 * c1) * id
-    inv.m12 = (-a.m30 * s5 + a.m32 * s2 - a.m33 * s1) * id
-    inv.m13 = (a.m20 * s5 - a.m22 * s2 + a.m23 * s1) * id
-    inv.m20 = (a.m10 * c4 - a.m11 * c2 + a.m13 * c0) * id
-    inv.m21 = (-a.m00 * c4 + a.m01 * c2 - a.m03 * c0) * id
-    inv.m22 = (a.m30 * s4 - a.m31 * s2 + a.m33 * s0) * id
-    inv.m23 = (-a.m20 * s4 + a.m21 * s2 - a.m23 * s0) * id
-    inv.m30 = (-a.m10 * c3 + a.m11 * c1 - a.m12 * c0) * id
-    inv.m31 = (a.m00 * c3 - a.m01 * c1 + a.m02 * c0) * id
-    inv.m32 = (-a.m30 * s3 + a.m31 * s1 - a.m32 * s0) * id
-    inv.m33 = (a.m20 * s3 - a.m21 * s1 + a.m22 * s0) * id
+    double em00 = (a.m11 * c5 - a.m12 * c4) + a.m13 * c3
+    inv.m00 = em00 * id
+    double em01 = (-a.m01 * c5 + a.m02 * c4) - a.m03 * c3
+    inv.m01 = em01 * id
+    double em02 = (a.m31 * s5 - a.m32 * s4) + a.m33 * s3
+    inv.m02 = em02 * id
+    double em03 = (-a.m21 * s5 + a.m22 * s4) - a.m23 * s3
+    inv.m03 = em03 * id
+    double em10 = (-a.m10 * c5 + a.m12 * c2) - a.m13 * c1
+    inv.m10 = em10 * id
+    double em11 = (a.m00 * c5 - a.m02 * c2) + a.m03 * c1
+    inv.m11 = em11 * id
+    double em12 = (-a.m30 * s5 + a.m32 * s2) - a.m33 * s1
+    inv.m12 = em12 * id
+    double em13 = (a.m20 * s5 - a.m22 * s2) + a.m23 * s1
+    inv.m13 = em13 * id
+    double em20 = (a.m10 * c4 - a.m11 * c2) + a.m13 * c0
+    inv.m20 = em20 * id
+    double em21 = (-a.m00 * c4 + a.m01 * c2) - a.m03 * c0
+    inv.m21 = em21 * id
+    double em22 = (a.m30 * s4 - a.m31 * s2) + a.m33 * s0
+    inv.m22 = em22 * id
+    double em23 = (-a.m20 * s4 + a.m21 * s2) - a.m23 * s0
+    inv.m23 = em23 * id
+    double em30 = (-a.m10 * c3 + a.m11 * c1) - a.m12 * c0
+    inv.m30 = em30 * id
+    double em31 = (a.m00 * c3 - a.m01 * c1) + a.m02 * c0
+    inv.m31 = em31 * id
+    double em32 = (-a.m30 * s3 + a.m31 * s1) - a.m32 * s0
+    inv.m32 = em32 * id
+    double em33 = (a.m20 * s3 - a.m21 * s1) + a.m22 * s0
+    inv.m33 = em33 * id
     return inv
 
 # Translation matrix (translation vector given as components).

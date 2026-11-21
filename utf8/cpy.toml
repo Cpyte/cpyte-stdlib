@@ -1,0 +1,9 @@
+[cpm]
+name = "utf8"
+version = "1.0.0"
+prebuilt = true
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+# Self-contained: C helpers live in the ccode: block below.

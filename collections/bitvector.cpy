@@ -17,7 +17,7 @@ public def _bv_tab() -> int*:
     int i = 0
     for i in range(256):
         int c = 0
-        int v = i
+        int v = (int)i
         int k = 0
         for k in range(8):
             c = c + (v & 1)

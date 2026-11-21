@@ -132,9 +132,11 @@ public def interp_lagrange(xs double*, ys double*, n int, x double) -> double:
 public def interp_cubic_hermite(y0 double, y1 double, m0 double, m1 double, t double) -> double:
     double t2 = t * t
     double t3 = t2 * t
-    double h00 = 2.0 * t3 - 3.0 * t2 + 1.0
-    double h10 = t3 - 2.0 * t2 + t
-    double h01 = -2.0 * t3 + 3.0 * t2
+    # Parenthesized: chained `-`/`+` without parentheses is right-associative
+    # in cpyte 4.6.9 (`a - b - c` compiles as `a - (b - c)`).
+    double h00 = (2.0 * t3 - 3.0 * t2) + 1.0
+    double h10 = (t3 - 2.0 * t2) + t
+    double h01 = (t3 * -2.0) + 3.0 * t2
     double h11 = t3 - t2
     return h00 * y0 + h10 * m0 + h01 * y1 + h11 * m1
 
@@ -152,7 +154,7 @@ public def interp_spline_coeffs(xs double*, ys double*, n int, M double*) -> voi
     double* d = (double*)malloc((size_t)(sizeof(double) * m))
     double* c = (double*)malloc((size_t)(sizeof(double) * m))
     for i in range(1, n - 1):
-        int idx = i - 1
+        int64 idx = i - 1
         double hp = xs[i] - xs[i - 1]
         double hn = xs[i + 1] - xs[i]
         double rhs = (ys[i + 1] - ys[i]) / hn - (ys[i] - ys[i - 1]) / hp

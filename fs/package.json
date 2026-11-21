@@ -1,0 +1,14 @@
+{
+  "name": "fs",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "File metadata and directory operations for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

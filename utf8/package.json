@@ -1,0 +1,14 @@
+{
+  "name": "utf8",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "strict UTF-8 validation, codepoint charmaps and legacy charset conversion",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}
