@@ -1,7 +1,11 @@
 {
   "name": "regex",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "capabilities": { "keywords": [], "operators": [] },
   "extensions": {},
-  "metadata": { "description": "regex library", "author": "WEW", "license": "MIT" }
+  "metadata": {
+    "description": "Production PCRE2-backed regular expressions for Cpyte",
+    "author": "WEW",
+    "license": "MIT"
+  }
 }

@@ -1,8 +1,10 @@
 [cpm]
 name = "regex"
-version = "1.0.0"
+version = "2.0.0"
 prebuilt = false
 scorpion = false
 sef = false
 
 [cpm.dependencies]
+# No package dependencies. PCRE2 is loaded dynamically from the host at
+# runtime; see README.md for library discovery and overrides.
