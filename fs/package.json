@@ -1,13 +1,13 @@
 {
-  "name": "fs",
-  "version": "1.0.0",
+  "name": "@std/fs",
+  "version": "1.1.0",
   "capabilities": {
     "keywords": [],
     "operators": []
   },
   "extensions": {},
   "metadata": {
-    "description": "File metadata and directory operations for Cpyte",
+    "description": "File metadata, directory operations, and file contents I/O for Cpyte",
     "author": "WEW",
     "license": "MIT"
   }

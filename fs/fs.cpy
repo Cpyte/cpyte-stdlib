@@ -1,10 +1,12 @@
-# @std/fs — file metadata and directory operations.
+# @std/fs — file metadata, directory operations, and file contents I/O.
 #
 # Byte-oriented paths (`const char*`), so this covers POSIX plus Windows-ANSI
-# paths; wide/UTF-16 Windows paths are out of scope. Reading and writing file
-# *contents* deliberately lives with the existing `file` module — this package
-# only adds the metadata/stat/readdir/mkdir/remove/copy layer that `file`
-# lacks, so the two can be imported together without symbol collisions.
+# paths; wide/UTF-16 Windows paths are out of scope.
+#
+# Provides: existence/kind checks, metadata, directory listing, mkdir/copy/
+# rename/remove, path helpers, plus file handle open/read/write/seek/tell/
+# close and whole-file read/write/append helpers (stdio-backed). Use raw byte
+# modes like "rb"/"wb"/"ab" for binary data.
 #
 # Every string this package returns comes from a GC `char[]` buffer that the C
 # side fills and terminates; no C-`malloc`'d pointer ever escapes into cpy.
@@ -17,6 +19,7 @@ ccode:
 
     #define CPY_FS_MAX 4096
     #define CPY_FS_MAX_ENTRIES 65536
+    #define FS_MAX_HANDLES 64
 
     #ifdef _WIN32
         #include <direct.h>
@@ -259,6 +262,140 @@ ccode:
             return n;
         }
     #endif
+
+    /* ── file handles (stdio-backed) ─────────────────────────── */
+
+    static FILE* cpy_fs_handles[FS_MAX_HANDLES];
+    static int64_t cpy_fs_handle_used[FS_MAX_HANDLES];
+
+    static int64_t cpy_fs_alloc_handle(FILE* f) {
+        for (int i = 0; i < FS_MAX_HANDLES; i++) {
+            if (!cpy_fs_handle_used[i]) {
+                cpy_fs_handles[i] = f;
+                cpy_fs_handle_used[i] = 1;
+                return (int64_t)(i + 1); /* 1-based */
+            }
+        }
+        return (int64_t)-10;
+    }
+
+    static FILE* cpy_fs_get_handle(int64_t h) {
+        if (h < 1 || h > FS_MAX_HANDLES) return NULL;
+        if (!cpy_fs_handle_used[h - 1]) return NULL;
+        return cpy_fs_handles[h - 1];
+    }
+
+    int64_t cpy_fs_open(const char* path, const char* mode) {
+        FILE* f;
+        int64_t id;
+        if (path == NULL || *path == 0 || mode == NULL || *mode == 0) return (int64_t)-1;
+        f = fopen(path, mode);
+        if (f == NULL) return (int64_t)-2;
+        id = cpy_fs_alloc_handle(f);
+        if (id < 0) { fclose(f); return id; }
+        return id;
+    }
+
+    int64_t cpy_fs_close(int64_t h) {
+        FILE* f = cpy_fs_get_handle(h);
+        if (f == NULL) return (int64_t)-1;
+        cpy_fs_handle_used[h - 1] = 0;
+        cpy_fs_handles[h - 1] = NULL;
+        return (int64_t)fclose(f);
+    }
+
+    int64_t cpy_fs_read(int64_t h, void* dst, int64_t n) {
+        FILE* f = cpy_fs_get_handle(h);
+        size_t got;
+        if (f == NULL || (n > 0 && dst == NULL) || n < 0) return (int64_t)-1;
+        if (n == 0) return (int64_t)0;
+        got = fread(dst, 1, (size_t)n, f);
+        if (got == 0 && ferror(f)) return (int64_t)-2;
+        return (int64_t)got;
+    }
+
+    int64_t cpy_fs_write(int64_t h, const void* src, int64_t n) {
+        FILE* f = cpy_fs_get_handle(h);
+        size_t wrote;
+        if (f == NULL || (n > 0 && src == NULL) || n < 0) return (int64_t)-1;
+        if (n == 0) return (int64_t)0;
+        wrote = fwrite(src, 1, (size_t)n, f);
+        if (wrote != (size_t)n) return (int64_t)-2;
+        return (int64_t)wrote;
+    }
+
+    int64_t cpy_fs_tell(int64_t h) {
+        FILE* f = cpy_fs_get_handle(h);
+        long pos;
+        if (f == NULL) return (int64_t)-1;
+        pos = ftell(f);
+        if (pos < 0) return (int64_t)-2;
+        return (int64_t)pos;
+    }
+
+    int64_t cpy_fs_seek(int64_t h, int64_t offset, int whence) {
+        FILE* f = cpy_fs_get_handle(h);
+        int w;
+        if (f == NULL) return (int64_t)-1;
+        if (whence == 0) w = SEEK_SET;
+        else if (whence == 1) w = SEEK_CUR;
+        else if (whence == 2) w = SEEK_END;
+        else return (int64_t)-2;
+        return (int64_t)fseek(f, (long)offset, w);
+    }
+
+    int64_t cpy_fs_eof(int64_t h) {
+        FILE* f = cpy_fs_get_handle(h);
+        if (f == NULL) return (int64_t)1;
+        return feof(f) ? (int64_t)1 : (int64_t)0;
+    }
+
+    int64_t cpy_fs_flush(int64_t h) {
+        FILE* f = cpy_fs_get_handle(h);
+        if (f == NULL) return (int64_t)-1;
+        return (int64_t)fflush(f);
+    }
+
+    /* whole-file helpers (reuse cpy_fs_size) */
+    int64_t cpy_fs_file_size2(const char* path) {
+        return cpy_fs_size(path);
+    }
+
+    int64_t cpy_fs_read_file_all(const char* path, void* dst, int64_t cap) {
+        FILE* f;
+        size_t got;
+        if (path == NULL || dst == NULL || cap < 0) return (int64_t)-1;
+        f = fopen(path, "rb");
+        if (f == NULL) return (int64_t)-2;
+        got = fread(dst, 1, (size_t)cap, f);
+        if (ferror(f)) { fclose(f); return (int64_t)-3; }
+        fclose(f);
+        return (int64_t)got;
+    }
+
+    int64_t cpy_fs_write_file_all(const char* path, const void* src, int64_t n) {
+        FILE* f;
+        size_t wrote;
+        if (path == NULL || (n > 0 && src == NULL) || n < 0) return (int64_t)-1;
+        f = fopen(path, "wb");
+        if (f == NULL) return (int64_t)-2;
+        wrote = fwrite(src, 1, (size_t)n, f);
+        fclose(f);
+        if (wrote != (size_t)n) return (int64_t)-3;
+        return (int64_t)wrote;
+    }
+
+    int64_t cpy_fs_append_file_all(const char* path, const void* src, int64_t n) {
+        FILE* f;
+        size_t wrote;
+        if (path == NULL || (n > 0 && src == NULL) || n < 0) return (int64_t)-1;
+        f = fopen(path, "ab");
+        if (f == NULL) return (int64_t)-2;
+        wrote = fwrite(src, 1, (size_t)n, f);
+        fclose(f);
+        if (wrote != (size_t)n) return (int64_t)-3;
+        return (int64_t)wrote;
+    }
 
     /* ── mutations ────────────────────────────────────────────── */
 
@@ -566,3 +703,91 @@ public def fs_absolute(path str) -> str:
     if cpy_fs_absolute(path, (void*)buf, (int64)4096) < (int64)0:
         return ""
     return (str)buf
+
+# ── file handles + contents (stdio-backed) ─────────────────────
+# Modes: "r","rb","w","wb","a","ab","r+","rb+",... passed to fopen.
+# Handles are integer ids (>=1). Prefer "rb"/"wb"/"ab" for raw bytes.
+
+public def fs_open(path str, mode str) -> int64:
+    return cpy_fs_open(path, mode)
+
+public def fs_close(h int64) -> int:
+    return cpy_fs_close(h)
+
+# Reads up to n bytes; returns a byte array of the bytes read (may be shorter at EOF).
+public def fs_read(h int64, n int64) -> char[]:
+    if n <= (int64)0:
+        return new char[(int64)0]
+    char[] buf = new char[n]
+    int64 got = cpy_fs_read(h, (void*)buf, n)
+    if got < (int64)0:
+        return new char[(int64)0]
+    if got == n:
+        return buf
+    char[] out = new char[got]
+    int64 i = (int64)0
+    while i < got:
+        out[i] = buf[i]
+        i = i + (int64)1
+    return out
+
+# Reads exactly n bytes or returns an empty array.
+public def fs_read_exact(h int64, n int64) -> char[]:
+    char[] buf = new char[n]
+    if n <= (int64)0:
+        return buf
+    int64 got = cpy_fs_read(h, (void*)buf, n)
+    if got != n:
+        return new char[(int64)0]
+    return buf
+
+public def fs_write(h int64, data char[]) -> int64:
+    return cpy_fs_write(h, (void*)data, len(data))
+
+# Write a str as bytes (C string bytes up to NUL in practice for this form; prefer char[] for raw).
+public def fs_write_str(h int64, s str) -> int64:
+    # write the raw string bytes including no extra NUL handling beyond what caller wants
+    return cpy_fs_write(h, (void*)s, (int64)len(s))
+
+public def fs_tell(h int64) -> int64:
+    return cpy_fs_tell(h)
+
+# whence: 0=SEEK_SET, 1=SEEK_CUR, 2=SEEK_END
+public def fs_seek(h int64, offset int64, whence int) -> int:
+    return cpy_fs_seek(h, offset, whence)
+
+public def fs_eof(h int64) -> bool:
+    return cpy_fs_eof(h) != (int64)0
+
+public def fs_flush(h int64) -> int:
+    return cpy_fs_flush(h)
+
+# Whole-file helpers (binary by default via C).
+public def fs_read_all(path str) -> char[]:
+    int64 cap = cpy_fs_file_size2(path)
+    if cap < (int64)0:
+        return new char[(int64)0]
+    char[] buf = new char[cap]
+    int64 got = cpy_fs_read_file_all(path, (void*)buf, cap)
+    if got < (int64)0:
+        return new char[(int64)0]
+    if got == cap:
+        return buf
+    char[] out = new char[got]
+    int64 i = (int64)0
+    while i < got:
+        out[i] = buf[i]
+        i = i + (int64)1
+    return out
+
+public def fs_write_all(path str, data char[]) -> int64:
+    return cpy_fs_write_file_all(path, (void*)data, len(data))
+
+public def fs_write_all_str(path str, s str) -> int64:
+    return cpy_fs_write_file_all(path, (void*)s, (int64)len(s))
+
+public def fs_append_all(path str, data char[]) -> int64:
+    return cpy_fs_append_file_all(path, (void*)data, len(data))
+
+public def fs_append_all_str(path str, s str) -> int64:
+    return cpy_fs_append_file_all(path, (void*)s, (int64)len(s))
