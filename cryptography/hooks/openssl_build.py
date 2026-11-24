@@ -6,15 +6,7 @@ import os
 import platform
 import shutil
 import subprocess
-from typing import Any
-
-try:
-    from cpyte.extension_hooks import BuildHook, CompilerContext, HookMetadata, HookStage
-except Exception:  # pragma: no cover
-    BuildHook = object  # type: ignore
-    CompilerContext = object  # type: ignore
-    HookMetadata = None  # type: ignore
-    HookStage = None  # type: ignore
+from cpyte.extension_hooks import BuildHook, HookMetadata
 
 
 def _find_openssl_include() -> str | None:
@@ -149,38 +141,34 @@ def _find_openssl_libdir() -> str | None:
     return None
 
 
-class OpenSSLBuildHook:
-    if BuildHook is not object:
-        pass
-
-    stage = HookStage.LINK if HookStage else None
-
+class OpenSSLBuildHook(BuildHook):
     def __init__(self):
-        if HookMetadata:
-            self.metadata = HookMetadata(name="cryptography:openssl", version="1.0.0", priority=10)
-        else:
-            self.metadata = None
-        self.package_name = "cryptography"
+        super().__init__(
+            "cryptography",
+            metadata=HookMetadata(
+                name="cryptography:openssl", version="1.0.1", priority=10
+            ),
+        )
 
-    def get_include_paths(self, context: Any) -> list[str]:
+    def get_include_paths(self, context):
         inc = _find_openssl_include()
         if inc:
             return [inc]
         return []
 
-    def get_library_paths(self, context: Any) -> list[str]:
+    def get_library_paths(self, context):
         libdir = _find_openssl_libdir()
         if libdir:
             return [libdir]
         return []
 
-    def get_libraries(self, context: Any) -> list[str]:
+    def get_libraries(self, context):
         # Do not add libs on Windows MSVC toolchain in the same way? But we need cross-platform.
         # OpenSSL typically links as ssl, crypto (or libssl/libcrypto). On Windows with MinGW, -lssl -lcrypto
         # On Windows MSVC, names differ, but our toolchain uses clang+linker; keeping simple for now.
         return ["ssl", "crypto"]
 
-    def get_defines(self, context: Any) -> dict[str, str | None]:
+    def get_defines(self, context):
         return {}
 
 

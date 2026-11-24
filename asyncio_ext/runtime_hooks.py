@@ -16,7 +16,7 @@ class AsyncRuntimeHook(RuntimeHook):
             ),
         )
 
-    def get_runtime_code(self, context=None):
+    def get_runtime_code(self, context):
         return r"""
 /* ============================================================================
  * asyncio_ext fiber event-loop runtime (single-threaded, cooperative).

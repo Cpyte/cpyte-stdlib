@@ -1,0 +1,14 @@
+{
+  "name": "random",
+  "version": "1.0.0",
+  "capabilities": {
+    "keywords": [],
+    "operators": []
+  },
+  "extensions": {},
+  "metadata": {
+    "description": "Randomness for Cpyte: OS CSPRNG, NIST SP 800-90A HMAC-DRBG, seeded PRNGs (incl. Philox2x32/4x32) and secrets helpers",
+    "author": "WEW",
+    "license": "MIT"
+  }
+}

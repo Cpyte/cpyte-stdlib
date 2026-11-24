@@ -1,6 +1,6 @@
 [cpm]
 name = "collections"
-version = "1.5"
+version = "1.5.1"
 prebuilt = false
 scorpion = false
 sef = false

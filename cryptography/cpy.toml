@@ -1,6 +1,6 @@
 [cpm]
 name = "cryptography"
-version = "1.0.0"
+version = "1.0.1"
 prebuilt = false
 scorpion = false
 sef = false

@@ -1,0 +1,10 @@
+[cpm]
+name = "random"
+version = "1.0.0"
+prebuilt = false
+scorpion = false
+sef = false
+
+[cpm.dependencies]
+# Self-contained: the C backends use only the platform OS entropy APIs and
+# the C standard library. No OpenSSL or other CPM dependency is required.

@@ -6,7 +6,7 @@ import "mem.cpy"
 # Growth reallocs in place (no element-by-element copy). Struct is passed by
 # value; field-mutating ops return the updated Deque.
 #
-# LAYOUT LOCKED: the runtime hook (runtime_hooks.py / deque_to_list) reads
+# LAYOUT LOCKED: the `deque_to_list` ccode helper below reads
 # {void* data; size_t capacity; size_t length; size_t front}. Keep field order.
 struct Deque:
     void** data
