@@ -257,31 +257,30 @@ public def matrix_lu(a Matrix) -> Matrix:
     assert a.n_rows == a.n_cols, "LU requires a square matrix"
     size_t n = a.n_rows
     Matrix lu = matrix_copy(a)
-    size_t i = (size_t)0
     for k in range((int)n):
         # Find pivot
         size_t p = (size_t)k
         double max_v = fabs(lu.data[(int)k * (int)n + (int)k])
-        size_t r = (size_t)k + (size_t)1
         for r in range((int)k + 1, (int)n):
             double v = fabs(lu.data[(int)r * (int)n + (int)k])
             if v > max_v:
                 max_v = v
-                p = r
+                p = (size_t)r
         if max_v == 0.0:
             continue
-        # Swap rows k and p
+        # Swap rows k and p (entire rows, including already-computed L columns)
         if p != (size_t)k:
-            for j in range((int)k, (int)n):
+            for j in range((int)n):
                 double tmp = lu.data[(int)k * (int)n + (int)j]
                 lu.data[(int)k * (int)n + (int)j] = lu.data[(int)p * (int)n + (int)j]
                 lu.data[(int)p * (int)n + (int)j] = tmp
         # Elimination
-        int i2 = 0
         for i2 in range((int)k + 1, (int)n):
-            double factor = lu.data[(int)i2 * (int)n + (int)k] / lu.data[(int)k * (int)n + (int)k]
+            double piv = lu.data[(int)k * (int)n + (int)k]
+            if piv == 0.0:
+                continue
+            double factor = lu.data[(int)i2 * (int)n + (int)k] / piv
             lu.data[(int)i2 * (int)n + (int)k] = factor
-            int j2 = 0
             for j2 in range((int)k + 1, (int)n):
                 lu.data[(int)i2 * (int)n + (int)j2] = lu.data[(int)i2 * (int)n + (int)j2] - factor * lu.data[(int)k * (int)n + (int)j2]
     return lu
@@ -309,12 +308,15 @@ public def matrix_lu_perm(a Matrix, perm double*) -> Matrix:
             double pr = perm[(int)k]
             perm[(int)k] = perm[(int)p]
             perm[(int)p] = pr
-            for j in range((int)k, (int)n):
+            for j in range((int)n):
                 double tmp = lu.data[(int)k * (int)n + (int)j]
                 lu.data[(int)k * (int)n + (int)j] = lu.data[(int)p * (int)n + (int)j]
                 lu.data[(int)p * (int)n + (int)j] = tmp
         for i2 in range((int)k + 1, (int)n):
-            double factor = lu.data[(int)i2 * (int)n + (int)k] / lu.data[(int)k * (int)n + (int)k]
+            double piv = lu.data[(int)k * (int)n + (int)k]
+            if piv == 0.0:
+                continue
+            double factor = lu.data[(int)i2 * (int)n + (int)k] / piv
             lu.data[(int)i2 * (int)n + (int)k] = factor
             for j2 in range((int)k + 1, (int)n):
                 lu.data[(int)i2 * (int)n + (int)j2] = lu.data[(int)i2 * (int)n + (int)j2] - factor * lu.data[(int)k * (int)n + (int)j2]
@@ -769,6 +771,8 @@ public def matrix_singular_values(a Matrix) -> Matrix:
                     alpha = alpha + bp * bp
                     beta = beta + bq * bq
                     gamma = gamma + bp * bq
+                if fabs(gamma) <= pow(10.0, -14.0):
+                    continue
                 double tau = (beta - alpha) / (2.0 * gamma)
                 double t = 0.0
                 double sign = 1.0
@@ -938,25 +942,30 @@ public def matrix_stable_norm(v Matrix) -> double:
     return scale * sqrt(ssq)
 
 # Householder vector for reflection. Computes the Householder vector v such that
-# (I - 2 v v^T / (v^T v)) applied to x kills all but the first component.
-# Writes the normalized Householder vector into v_out (length n) and returns the
-# scale factor beta such that reflection = I - beta v v^T.
+# (I - beta v v^T) applied to x zeros out x[1..n-1] (standard Householder).
+# Writes v into v_out (length n) and returns beta (or 0.0 if no reflection).
 public def matrix_householder_vector(x Matrix, v_out Matrix) -> double:
     size_t n = x.n_rows
+    if n == (size_t)0:
+        return 0.0
     double sigma = 0.0
     for i in range(1, (int)n):
         sigma = sigma + x.data[i] * x.data[i]
-    v_out.data[0] = 1.0
+    v_out.data[0] = x.data[0]
     for i in range(1, (int)n):
         v_out.data[i] = x.data[i]
-    if sigma == 0.0:
+    if sigma == 0.0 and x.data[0] >= 0.0:
         return 0.0
+    if sigma == 0.0 and x.data[0] < 0.0:
+        return 2.0
     double normx = sqrt(x.data[0] * x.data[0] + sigma)
-    double beta = 2.0 / (x.data[0] * x.data[0] + sigma)
+    double v0 = 0.0
     if x.data[0] <= 0.0:
-        v_out.data[0] = x.data[0] - normx
+        v0 = x.data[0] - normx
     else:
-        v_out.data[0] = -sigma / (x.data[0] + normx)
+        v0 = -sigma / (x.data[0] + normx)
+    v_out.data[0] = v0
+    double beta = (2.0 * v0 * v0) / (sigma + v0 * v0)
     return beta
 
 # Apply a Householder reflection Q = I - beta v v^T to a matrix in place
@@ -1450,7 +1459,8 @@ public def matrix_column(m Matrix, col size_t, ncols size_t, nrows size_t) -> Ma
         v.data[i] = m.data[(int)i * (int)ncols + (int)col]
     return v
 
-# GMRES via Arnoldi (full reorthogonalization). Returns solution.
+# GMRES via Arnoldi (full reorthogonalization). Uses Givens rotations on the
+# (m+1) x m upper-Hessenberg to solve the least-squares subproblem correctly.
 public def matrix_gmres(a Matrix, b Matrix, restart int, max_iter int, tol double) -> Matrix:
     size_t n = a.n_rows
     Matrix x = matrix(n, (size_t)1)
@@ -1469,40 +1479,180 @@ public def matrix_gmres(a Matrix, b Matrix, restart int, max_iter int, tol doubl
         for i in range((int)n):
             V.data[(int)i * (int)m + 0] = r.data[i] / beta
         Matrix H = matrix(m + 1, m)
-        for j in range(m):
+        double[] cs = new double[m]
+        double[] sn = new double[m]
+        double[] g = new double[m + 1]
+        for i in range(m + 1):
+            g[i] = 0.0
+        g[0] = beta
+        int jfinal = 0
+        int broke = 0
+        int j = 0
+        while j < m:
+            jfinal = j
             Matrix w = matrix_mul_vec(a, matrix_column(V, (size_t)j, (size_t)m, (size_t)n))
             for i2 in range(j + 1):
-                double h = 0.0
+                double hh = 0.0
                 for rr in range((int)n):
-                    h = h + V.data[(int)rr * (int)m + (int)i2] * w.data[(int)rr]
-                H.data[(int)i2 * (int)m + (int)j] = h
+                    hh = hh + V.data[(int)rr * (int)m + (int)i2] * w.data[(int)rr]
+                H.data[(int)i2 * (int)m + (int)j] = hh
                 for rr in range((int)n):
-                    w.data[(int)rr] = w.data[(int)rr] - h * V.data[(int)rr * (int)m + (int)i2]
-            double h2 = matrix_stable_norm(w)
-            if j + 1 < (int)n:
-                H.data[(int)(j + 1) * (int)m + (int)j] = h2
-            if h2 != 0.0 and j + 1 < (int)n:
-                for rr in range((int)n):
-                    V.data[(int)rr * (int)m + (int)(j + 1)] = w.data[(int)rr] / h2
-        # solve least-squares min || beta e1 - H y || via normal equations
-        Matrix hm = matrix(m, m)
-        for i2 in range(m):
-            for j2 in range(m):
-                hm.data[(int)i2 * (int)m + (int)j2] = H.data[(int)i2 * (int)m + (int)j2]
-        Matrix rhs = matrix(m, (size_t)1)
-        rhs.data[0] = beta
-        for i2 in range(1, m):
-            rhs.data[i2] = 0.0
-        Matrix y = matrix_solve(hm, rhs)
-        for i2 in range(m):
-            for rr in range((int)n):
-                x.data[(int)rr] = x.data[(int)rr] + V.data[(int)rr * (int)m + (int)i2] * y.data[(int)i2]
+                    w.data[(int)rr] = w.data[(int)rr] - hh * V.data[(int)rr * (int)m + (int)i2]
+            double h2n = matrix_stable_norm(w)
+            H.data[(int)(j + 1) * (int)m + (int)j] = h2n
+            for i2 in range(j):
+                double hij = H.data[(int)i2 * (int)m + (int)j]
+                double hi1j = H.data[(int)(i2 + 1) * (int)m + (int)j]
+                H.data[(int)i2 * (int)m + (int)j] = cs[i2] * hij + sn[i2] * hi1j
+                H.data[(int)(i2 + 1) * (int)m + (int)j] = -sn[i2] * hij + cs[i2] * hi1j
+            double hjj = H.data[(int)j * (int)m + (int)j]
+            double hj1j = H.data[(int)(j + 1) * (int)m + (int)j]
+            double denom = sqrt(hjj * hjj + hj1j * hj1j)
+            if denom == 0.0:
+                cs[j] = 1.0
+                sn[j] = 0.0
+            else:
+                cs[j] = hjj / denom
+                sn[j] = hj1j / denom
+            H.data[(int)j * (int)m + (int)j] = cs[j] * hjj + sn[j] * hj1j
+            H.data[(int)(j + 1) * (int)m + (int)j] = 0.0
+            double gj = g[j]
+            g[j] = cs[j] * gj + sn[j] * g[j + 1]
+            g[j + 1] = -sn[j] * gj + cs[j] * g[j + 1]
+            if fabs(g[j + 1]) < tol:
+                Matrix y = matrix((size_t)(j + 1), (size_t)1)
+                int ii = j
+                while ii >= 0:
+                    double sumy = g[ii]
+                    int kk = ii + 1
+                    while kk <= j:
+                        sumy = sumy - H.data[(int)ii * (int)m + (int)kk] * y.data[kk]
+                        kk = kk + 1
+                    if H.data[(int)ii * (int)m + (int)ii] == 0.0:
+                        y.data[ii] = 0.0
+                    else:
+                        y.data[ii] = sumy / H.data[(int)ii * (int)m + (int)ii]
+                    ii = ii - 1
+                int yi = 0
+                while yi <= j:
+                    int rr2 = 0
+                    while rr2 < (int)n:
+                        x.data[(int)rr2] = x.data[(int)rr2] + V.data[(int)rr2 * (int)m + (int)yi] * y.data[yi]
+                        rr2 = rr2 + 1
+                    yi = yi + 1
+                broke = 1
+                break
+            if h2n != 0.0 and j + 1 < m:
+                int rr3 = 0
+                while rr3 < (int)n:
+                    V.data[(int)rr3 * (int)m + (int)(j + 1)] = w.data[(int)rr3] / h2n
+                    rr3 = rr3 + 1
+            j = j + 1
+        if broke == 0:
+            Matrix y2 = matrix((size_t)m, (size_t)1)
+            int ii2 = m - 1
+            while ii2 >= 0:
+                double sumy2 = g[ii2]
+                int kk2 = ii2 + 1
+                while kk2 < m:
+                    sumy2 = sumy2 - H.data[(int)ii2 * (int)m + (int)kk2] * y2.data[kk2]
+                    kk2 = kk2 + 1
+                if H.data[(int)ii2 * (int)m + (int)ii2] == 0.0:
+                    y2.data[ii2] = 0.0
+                else:
+                    y2.data[ii2] = sumy2 / H.data[(int)ii2 * (int)m + (int)ii2]
+                ii2 = ii2 - 1
+            int yi2 = 0
+            while yi2 < m:
+                int rr4 = 0
+                while rr4 < (int)n:
+                    x.data[(int)rr4] = x.data[(int)rr4] + V.data[(int)rr4 * (int)m + (int)yi2] * y2.data[yi2]
+                    rr4 = rr4 + 1
+                yi2 = yi2 + 1
         outer += 1
     return x
 
-# MINRES for symmetric (possibly indefinite) systems via Lanczos. Simplified.
+# MINRES (Lanczos + two Givens rotations) for symmetric systems.
+# Simplified but structurally different from CG; avoids CG's wrong behavior
+# on indefinite symmetric systems in practice for many cases.
 public def matrix_minres(a Matrix, b Matrix, max_iter int, tol double) -> Matrix:
-    return matrix_cg(a, b, max_iter, tol)
+    size_t n = a.n_rows
+    Matrix x = matrix(n, (size_t)1)
+    for i in range((int)n):
+        x.data[i] = 0.0
+    Matrix v_prev = matrix(n, (size_t)1)
+    Matrix v = matrix(n, (size_t)1)
+    for i in range((int)n):
+        v_prev.data[i] = 0.0
+        v.data[i] = b.data[i]
+    double beta_cur = matrix_stable_norm(v)
+    if beta_cur < tol:
+        return x
+    for i in range((int)n):
+        v.data[i] = v.data[i] / beta_cur
+    double beta_prev = 0.0
+    double c_curr = 1.0
+    double s_curr = 0.0
+    Matrix w_prev_m = matrix(n, (size_t)1)
+    Matrix w_curr_m = matrix(n, (size_t)1)
+    for i in range((int)n):
+        w_prev_m.data[i] = 0.0
+        w_curr_m.data[i] = 0.0
+    double phi = beta_cur
+    int k = 0
+    while k < max_iter:
+        Matrix Avm = matrix_mul_vec(a, v)
+        double alpha = 0.0
+        for i in range((int)n):
+            alpha = alpha + v.data[i] * Avm.data[i]
+        Matrix v_next = matrix(n, (size_t)1)
+        for i in range((int)n):
+            v_next.data[i] = Avm.data[i] - alpha * v.data[i]
+        if k > 0:
+            for i in range((int)n):
+                v_next.data[i] = v_next.data[i] - beta_cur * v_prev.data[i]
+        double beta_next = matrix_stable_norm(v_next)
+        double r1 = c_curr * alpha - s_curr * beta_prev
+        double r2t = s_curr * alpha + c_curr * beta_prev
+        double r2v = beta_cur
+        double d1 = sqrt(r1 * r1 + r2t * r2t)
+        double c_new = 1.0
+        double s_new = 0.0
+        if d1 != 0.0:
+            c_new = r1 / d1
+            s_new = r2t / d1
+        double r3 = c_new * d1 + s_new * r2v
+        Matrix w_next_m = matrix(n, (size_t)1)
+        for i in range((int)n):
+            w_next_m.data[i] = v.data[i]
+        for i in range((int)n):
+            w_next_m.data[i] = w_next_m.data[i] - r2t * w_prev_m.data[i]
+        for i in range((int)n):
+            w_next_m.data[i] = w_next_m.data[i] - r1 * w_curr_m.data[i]
+        if r3 != 0.0:
+            for i in range((int)n):
+                w_next_m.data[i] = w_next_m.data[i] / r3
+        double phi_new = -s_new * phi
+        double phi_kv = c_new * phi
+        for i in range((int)n):
+            x.data[i] = x.data[i] + phi_kv * w_next_m.data[i]
+        if fabs(phi_new) < tol:
+            break
+        phi = fabs(phi_new)
+        for i in range((int)n):
+            w_prev_m.data[i] = w_curr_m.data[i]
+            w_curr_m.data[i] = w_next_m.data[i]
+            v_prev.data[i] = v.data[i]
+        if beta_next < tol:
+            break
+        for i in range((int)n):
+            v.data[i] = v_next.data[i] / beta_next
+        beta_prev = beta_cur
+        beta_cur = beta_next
+        c_curr = c_new
+        s_curr = s_new
+        k += 1
+    return x
 
 # =============================================================================
 # Optimization utilities (matrix-based; caller precomputes finite-difference
