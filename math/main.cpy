@@ -1,6 +1,9 @@
 import stdlib
 import math
 
+# Arbitrary-precision constants (pi, e, tau, phi, sqrt2, ...)
+import "constants.cpy"
+
 # Scalar operations
 import "scalar.cpy"
 

@@ -27,6 +27,13 @@ def eq_int(name str, got int64, want int64) -> int:
     print("  ok    " + name)
     return 0
 
+def eq_str(name str, got str, want str) -> int:
+    if got != want:
+        print("  FAIL  " + name + "  want " + want + "  got " + got)
+        return 1
+    print("  ok    " + name)
+    return 0
+
 # ------------------------------------------------------------------ scalar
 
 def test_scalar() -> int:
@@ -266,8 +273,27 @@ def test_fixed() -> int:
     n += near("rotz R*R^T trace", matrix3_trace(orth), 3.0)
     return n
 
+# --------------------------------------------------------------- constants
+
+def test_constants() -> int:
+    int n = 0
+    n += eq_str("pi", pi(20), "3.14159265358979323846")
+    n += eq_str("e", e(20), "2.71828182845904523536")
+    n += eq_str("tau", tau(20), "6.28318530717958647693")
+    n += eq_str("phi", phi(20), "1.61803398874989484820")
+    n += eq_str("sqrt2", sqrt2(20), "1.41421356237309504880")
+    n += eq_str("sqrt3", sqrt3(20), "1.73205080756887729353")
+    n += eq_str("ln2", ln2(20), "0.69314718055994530942")
+    n += eq_str("ln10", ln10(20), "2.30258509299404568402")
+    n += eq_str("euler_gamma", euler_gamma(20), "0.57721566490153286061")
+    n += eq_str("catalan", catalan(20), "0.91596559417721901505")
+    n += eq_str("math_constant name", math_constant("pi", 20), "3.14159265358979323846")
+    return n
+
 def main() -> int:
     int n = 0
+    print("constants:")
+    n += test_constants()
     print("scalar:")
     n += test_scalar()
     print("statistics:")

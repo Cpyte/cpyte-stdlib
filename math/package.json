@@ -1,11 +1,13 @@
 {
   "name": "math",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "capabilities": {
     "keywords": [],
     "operators": []
   },
-  "extensions": {},
+  "extensions": {
+    "build_hooks": ["hooks/mpfr_build.py"]
+  },
   "metadata": {
     "description": "Standard math utilities for Cpyte",
     "author": "WEW",
